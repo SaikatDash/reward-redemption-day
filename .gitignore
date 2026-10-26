@@ -5,3 +5,4 @@ __pycache__/
 .venv/
 .env
 .reward-redemption-day/
+.env.example

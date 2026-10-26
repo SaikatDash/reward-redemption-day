@@ -1,0 +1,39 @@
+services:
+  web:
+    build: .
+    restart: unless-stopped
+    environment:
+      HOST: 0.0.0.0
+      PORT: 8000
+      AI_BASE_URL: ${AI_BASE_URL:-http://ollama:11434/v1}
+      AI_MODEL: ${AI_MODEL:-qwen2.5:3b}
+      AI_API_KEY: ${AI_API_KEY:-}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:5173,http://127.0.0.1:5173}
+    ports:
+      - "${WEB_PORT:-8000}:8000"
+    depends_on:
+      ollama-model:
+        condition: service_completed_successfully
+
+  ollama:
+    image: ollama/ollama:latest
+    restart: unless-stopped
+    volumes:
+      - ollama_data:/root/.ollama
+    # Deliberately no published host port: model inference stays on this network.
+
+  ollama-model:
+    image: ollama/ollama:latest
+    restart: "no"
+    environment:
+      AI_MODEL: ${AI_MODEL:-qwen2.5:3b}
+      OLLAMA_HOST: http://ollama:11434
+    entrypoint: ["sh", "-c"]
+    command: ["until ollama list >/dev/null 2>&1; do sleep 2; done; ollama pull \"$${AI_MODEL}\""]
+    volumes:
+      - ollama_data:/root/.ollama
+    depends_on:
+      - ollama
+
+volumes:
+  ollama_data:
